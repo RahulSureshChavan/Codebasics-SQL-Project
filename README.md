@@ -99,3 +99,18 @@ ON m.movie_id = p.movie_id
 ```
 
 **Exercise 8:**  
+```-- Join more than 2 tables to generate table with actor, movies and no.of movies --
+SELECT 
+	a.name AS actor,
+    group_concat(m.title separator " | "),
+    COUNT(m.title) AS no_of_movies
+FROM movies AS m
+JOIN movie_actor AS ma
+ON m.movie_id = ma.movie_id
+JOIN actors AS a
+ON ma.actor_id = a.actor_id
+GROUP BY actor
+ORDER BY no_of_movies DESC
+```
+
+**Exercise 9:**
