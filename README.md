@@ -89,3 +89,13 @@ SELECT *,
 FROM food_db.items
 CROSS JOIN food_db.variants;
 ```
+
+**Exercise 7:**  
+```-- Profit table --
+SELECT m.movie_id, title, budget, revenue, currency, unit, ROUND(profit_inr_mln,1) AS profit_in_mln_inr
+FROM movies AS m
+LEFT JOIN profit_normalized AS p
+ON m.movie_id = p.movie_id
+```
+
+**Exercise 8:**  
