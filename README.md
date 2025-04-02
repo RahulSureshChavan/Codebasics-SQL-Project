@@ -191,3 +191,68 @@ WHERE (revenue - budget) > 500;
 ```
 
 **Exercise 13:**
+```-- Gross Sales Report: Monthly Product Transactions
+-- Month
+-- Product Name
+-- Variant
+-- Sold Quantity
+-- Gross Price Per Item
+-- Gross Price Total
+
+SELECT * FROM fact_sales_monthly
+WHERE
+	customer_code = 90002002 AND
+    get_fiscal_year(date) = 2021
+ORDER BY date ASC;
+
+SELECT 
+	s.date, s.product_code, p.product, p.variant, s.sold_quantity, g.gross_price,
+    ROUND(g.gross_price*s.sold_quantity,2) AS gross_price_total
+FROM fact_sales_monthly AS s
+JOIN dim_product AS p
+ON p.product_code = s.product_code
+JOIN fact_gross_price AS g
+ON 
+	g.product_code = s.product_code AND
+    g.fiscal_year = get_fiscal_year(s.date)
+WHERE
+	customer_code = 90002002 AND
+    get_fiscal_year(date) = 2021 AND
+    get_fiscal_quarter(date) = "Q4"
+ORDER BY date ASC 
+LIMIT 1000000;
+```
+
+**Exercise 14:**
+```-- Gross Sales Report: Total Sales Amount --
+SELECT 
+	fsm.date, 
+    SUM(fgp.gross_price*fsm.sold_quantity) AS total_gross_price
+FROM fact_sales_monthly AS fsm
+JOIN fact_gross_price AS fgp
+ON 
+	fgp.product_code = fsm.product_code AND 
+    fgp.fiscal_year = get_fiscal_year(fsm.date)
+WHERE customer_code = 90002002
+GROUP BY fsm.date
+ORDER BY fsm.date ASC;
+```
+
+**Exercise 15:**
+```-- Yearly Sales Report
+-- Fiscal Year
+-- Total Gross Sales amount In that year from Croma
+SELECT
+	fgp.fiscal_year,
+    SUM(fgp.gross_price*fsm.sold_quantity) AS total_gross_sales_amt
+FROM fact_gross_price AS fgp
+JOIN fact_sales_monthly AS fsm
+ON 
+	fgp.product_code = fsm.product_code AND
+	fgp.fiscal_year = get_fiscal_year(fsm.date)
+WHERE customer_code = 90002002
+GROUP BY fgp.fiscal_year
+ORDER BY fgp.fiscal_year;
+```
+
+**Exercise 16:**
