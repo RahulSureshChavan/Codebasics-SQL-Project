@@ -591,3 +591,158 @@ WHERE dr<=2
 ```
 
 **Exercise 30:**
+```-- Creating helper table for generating forecast accuracy reports --
+CREATE TABLE fact_actual_estimate
+(
+SELECT
+	f.date,
+    f.fiscal_year,
+    f.product_code,
+    f.customer_code,
+    f.forecast_quantity,
+    s.sold_quantity
+FROM
+	fact_forecast_monthly AS f
+LEFT JOIN
+	fact_sales_monthly AS s
+USING (date, product_code, customer_code)
+
+UNION
+
+SELECT
+	s.date,
+    s.fiscal_year,
+    s.product_code,
+    s.customer_code,
+    f.forecast_quantity,
+    s.sold_quantity
+FROM
+	fact_sales_monthly AS s
+LEFT JOIN
+	 fact_forecast_monthly AS f
+USING (date, product_code, customer_code)
+);
+```
+
+**Exercise 31:**
+```-- Forecast Accuracy Report --
+WITH CTE1 AS
+(
+SELECT
+	f.customer_code, 
+    c.customer,
+    c.market,
+    SUM(f.sold_quantity) AS total_sold_qty,
+    SUM(f.forecast_quantity) AS total_forecast_qty,
+    SUM(f.forecast_quantity - f.sold_quantity) AS net_error,
+    SUM(f.forecast_quantity - f.sold_quantity)*100/SUM(f.forecast_quantity) AS net_err_pct,
+    SUM(ABS(f.forecast_quantity - f.sold_quantity)) AS abs_error,
+    SUM(ABS(f.forecast_quantity - f.sold_quantity))*100/SUM(f.forecast_quantity) AS abs_err_pct
+FROM
+	fact_actual_estimate AS f
+JOIN
+	dim_customer AS c
+ON
+	f.customer_code = c.customer_code
+WHERE 
+	f.fiscal_year = 2021
+GROUP BY
+	f.customer_code
+)
+SELECT 
+	*,
+    IF
+		(abs_err_pct > 100, 0, 100-abs_err_pct) AS forecast_accuracy
+FROM
+	CTE1
+ORDER BY forecast_accuracy DESC
+```
+
+**Exercise 32:**  
+```-- Write a query for the below scenario.
+-- The supply chain business manager wants to see which customers’ 
+-- forecast accuracy has dropped from 2020 to 2021. Provide a complete 
+-- report with these columns: customer_code, customer_name, market, 
+-- forecast_accuracy_2020, forecast_accuracy_2021
+-- PART A --
+CREATE TEMPORARY TABLE FA_21
+WITH CTE1 AS
+(
+SELECT
+	f.customer_code, 
+    c.customer,
+    c.market,
+    SUM(f.sold_quantity) AS total_sold_qty,
+    SUM(f.forecast_quantity) AS total_forecast_qty,
+    SUM(f.forecast_quantity - f.sold_quantity) AS net_error,
+    SUM(f.forecast_quantity - f.sold_quantity)*100/SUM(f.forecast_quantity) AS net_err_pct,
+    SUM(ABS(f.forecast_quantity - f.sold_quantity)) AS abs_error,
+    SUM(ABS(f.forecast_quantity - f.sold_quantity))*100/SUM(f.forecast_quantity) AS abs_err_pct
+FROM
+	fact_actual_estimate AS f
+JOIN
+	dim_customer AS c
+ON
+	f.customer_code = c.customer_code
+WHERE 
+	f.fiscal_year = 2021
+GROUP BY
+	f.customer_code
+)
+SELECT 
+	*,
+    IF
+		(abs_err_pct > 100, 0, 100-abs_err_pct) AS forecast_accuracy
+FROM
+	CTE1
+ORDER BY forecast_accuracy DESC;
+
+-- PART B --
+CREATE TEMPORARY TABLE FA_20
+WITH CTE1 AS
+(
+SELECT
+	f.customer_code, 
+    c.customer,
+    c.market,
+    SUM(f.sold_quantity) AS total_sold_qty,
+    SUM(f.forecast_quantity) AS total_forecast_qty,
+    SUM(f.forecast_quantity - f.sold_quantity) AS net_error,
+    SUM(f.forecast_quantity - f.sold_quantity)*100/SUM(f.forecast_quantity) AS net_err_pct,
+    SUM(ABS(f.forecast_quantity - f.sold_quantity)) AS abs_error,
+    SUM(ABS(f.forecast_quantity - f.sold_quantity))*100/SUM(f.forecast_quantity) AS abs_err_pct
+FROM
+	fact_actual_estimate AS f
+JOIN
+	dim_customer AS c
+ON
+	f.customer_code = c.customer_code
+WHERE 
+	f.fiscal_year = 2020
+GROUP BY
+	f.customer_code
+)
+SELECT 
+	*,
+    IF
+		(abs_err_pct > 100, 0, 100-abs_err_pct) AS forecast_accuracy
+FROM
+	CTE1
+ORDER BY forecast_accuracy DESC;
+
+-- PART C --
+SELECT
+	A.customer_code,
+    A.customer,
+    A.market,
+    B.forecast_accuracy AS FA20,
+    A.forecast_accuracy AS FA21
+FROM FA_21 AS A
+JOIN FA_20 AS B
+ON A.customer_code = B.customer_code
+WHERE A.forecast_accuracy < B.forecast_accuracy
+ORDER BY B.forecast_accuracy
+```
+
+**Exercise 33:**
+
