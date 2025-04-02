@@ -256,3 +256,338 @@ ORDER BY fgp.fiscal_year;
 ```
 
 **Exercise 16:**
+```-- Pre-Invoice Discount Report --
+SELECT 
+	fsm.date,
+    fsm.product_code,
+    dp.product,
+    dp.variant,
+    fsm.sold_quantity,
+    fgp.gross_price,
+    (fgp.gross_price * fsm.sold_quantity) AS gross_price_total,
+    pre.pre_invoice_discount_pct
+FROM fact_sales_monthly AS fsm
+JOIN dim_product AS dp
+ON fsm.product_code = dp.product_code
+JOIN fact_gross_price AS fgp
+ON 
+	fsm.product_code = fgp.product_code AND
+    get_fiscal_year(fsm.date) = fgp.fiscal_year
+JOIN fact_pre_invoice_deductions AS pre
+ON
+	fsm.customer_code = pre.customer_code AND
+    get_fiscal_year(fsm.date) = pre.fiscal_year
+WHERE
+	get_fiscal_year(fsm.date) = 2021;
+```
+
+**Exercise 17:**  
+```-- Net invoice sales using database views --
+SELECT
+	s.date,
+    s.fiscal_year,
+    s.customer_code,
+    c.market,
+    s.product_code,
+    p.product,
+    p.variant,
+    s.sold_quantity,
+    g.gross_price AS gross_price_per_unit,
+    (s.sold_quantity * g.gross_price) AS gross_price_total,
+    pre.pre_invoice_discount_pct
+    FROM fact_sales_monthly AS s
+    JOIN fact_gross_price AS g
+    ON
+		s.fiscal_year = g.fiscal_year AND
+        s.product_code = g.product_code
+	JOIN dim_product AS p
+    ON
+		g.product_code = p.product_code
+	JOIN dim_customer AS c
+    ON
+		c.customer_code = s.customer_code
+	JOIN fact_pre_invoice_deductions AS pre
+	ON
+		s.customer_code = pre.customer_code AND
+        s.fiscal_year = pre.fiscal_year;
+
+SELECT
+	*,
+    (1 - pre_invoice_discount_pct) * gross_price_total AS net_invoice_sales
+FROM sales_preinv_discount;
+```
+
+**Exercise 18:**
+```-- Post Invoice Discount, Net Sales using database views --
+SELECT
+	*,
+    (1 - pre_invoice_discount_pct) * gross_price_total AS net_invoice_sales,
+    (po.discounts_pct + po.other_deductions_pct) AS invoice_discount_pct
+FROM sales_preinv_discount AS s
+JOIN fact_post_invoice_deductions AS po
+ON
+	s.customer_code = po.customer_code AND
+    s.product_code = po.product_code AND
+    s.date = po.date;
+    
+SELECT 
+	*,
+    (1-post_invoice_discount_pct) * net_invoice_sales AS net_sales
+FROM sales_postinv_discount;
+```
+
+**Exercise 19:**
+```-- Create a view for gross sales. It should have the following columns,
+-- date, fiscal_year, customer_code, customer, market, product_code, product, variant,
+-- sold_quanity, gross_price_per_item, gross_price_total
+SELECT
+	s.date,
+    s.fiscal_year,
+    s.customer_code,
+    c.customer,
+    c.market,
+    s.product_code,
+    p.product,
+    p.variant,
+    s.sold_quantity,
+    g.gross_price AS gross_price_per_item,
+    (s.sold_quantity * g.gross_price) AS gross_price_total
+FROM fact_sales_monthly AS s
+JOIN fact_gross_price AS g
+ON
+	s.fiscal_year = g.fiscal_year AND
+    s.product_code = g.product_code
+JOIN dim_product AS p
+ON
+	g.product_code = p.product_code
+JOIN dim_customer AS c
+ON 
+	c.customer_code = s.customer_code
+```
+
+**Exercise 20:**
+```-- Top markets by net sales for fiscal year 2021
+SELECT 
+	market,
+    ROUND(SUM(net_sales/1000000),2) AS net_sales_mln
+FROM 
+	gdb0041.net_sales
+WHERE
+	fiscal_year = 2021
+GROUP BY 
+	market
+ORDER BY
+	net_sales_mln DESC
+LIMIT 5
+```
+
+**Exercise 21:**
+```-- Top customers by net sales for fiscal year 2021
+
+SELECT
+	c.customer,
+    ROUND(SUM(n.net_sales/1000000),2) AS net_sales_mln
+FROM
+	gdb0041.net_sales AS n
+JOIN
+	dim_customer AS c
+ON
+	c.customer_code = n.customer_code
+WHERE 
+	fiscal_year = 2021
+GROUP BY
+	c.customer
+ORDER BY
+	net_sales_mln DESC
+LIMIT 5
+```
+
+**Exercise 22:**
+```-- Write a stored procedure to get the 
+-- top n products by net sales for a given year. 
+-- Use product name without a variant.
+
+SELECT
+	product,
+    ROUND(SUM(net_sales/1000000),2) AS net_sales_mln
+FROM
+	gdb0041.net_sales
+WHERE
+	fiscal_year = 2021
+GROUP BY
+	product
+ORDER BY
+	net_sales_mln DESC
+LIMIT 5
+```
+
+**Exercise 23:**
+```-- Percentage of amount to total expenses
+
+SELECT 
+	*,
+    amount*100/SUM(amount) OVER() AS pct_of_total_expenses
+FROM expenses
+ORDER BY category;
+
+-- Percentage of amount to total category expenses
+
+SELECT 
+	*,
+    amount*100/SUM(amount) OVER(PARTITION BY category) AS pct_of_category_expenses
+FROM expenses
+ORDER BY category;
+
+-- Cumulative expenses
+
+SELECT
+	*,
+    SUM(amount) OVER(PARTITION BY category ORDER BY date) AS cumulative_expenses
+FROM expenses
+ORDER BY 
+	category,
+    date;
+```
+
+**Exercise 24:**
+```-- Net sales global market share percentage in FY 2021
+
+WITH CTE1 AS (
+SELECT
+	c.customer,
+    ROUND(SUM(n.net_sales/1000000),2) AS net_sales_mln
+FROM
+	gdb0041.net_sales AS n
+JOIN
+	dim_customer AS c
+ON
+	c.customer_code = n.customer_code
+WHERE 
+	n.fiscal_year = 2021
+GROUP BY
+	c.customer
+)
+    
+SELECT *,
+	net_sales_mln*100/SUM(net_sales_mln) OVER() AS market_share_pct
+FROM CTE1
+ORDER BY market_share_pct DESC;
+```
+
+**Exercise 25:**
+```-- Market share percentage by region
+
+WITH CTE1 AS (
+SELECT 
+	customer,
+    ROUND(SUM(net_sales/1000000),2) AS net_sales_mln
+FROM dim_customer AS c
+JOIN gdb0041.net_sales AS s
+ON c.customer_code = s.customer_code
+WHERE
+	s.fiscal_year = 2021 AND
+    region = "APAC"
+GROUP BY customer)
+
+SELECT *,
+	net_sales_mln*100/SUM(net_sales_mln) OVER() AS market_share_pct
+FROM CTE1
+ORDER BY market_share_pct DESC;
+```
+
+**Exercise 26:**
+```-- Market share percentage by region (as shown in the course video)
+
+WITH CTE1 AS (
+SELECT
+	c.customer,
+    c.region,
+    ROUND(SUM(net_sales)/1000000,2) AS net_sales_mln
+FROM net_sales AS s
+JOIN dim_customer AS c
+ON s.customer_code = c.customer_code
+WHERE s.fiscal_year = 2021
+GROUP BY c.customer, c.region
+ORDER BY net_sales_mln DESC)
+
+SELECT *,
+	net_sales_mln*100/SUM(net_sales_mln) OVER(PARTITION BY region) AS pct_share_region
+FROM CTE1
+ORDER BY region, net_sales_mln DESC
+```
+
+**Exercise 27:**  
+```-- Window Functions: ROW_NUMBER, RANK, DENSE_RANK --
+with cte1 as 
+		(select
+                     p.division,
+                     p.product,
+                     sum(sold_quantity) as total_qty
+                from fact_sales_monthly s
+                join dim_product p
+                      on p.product_code=s.product_code
+                where fiscal_year=2021
+                group by p.division, p.product),
+           cte2 as 
+	        (select 
+                     *,
+                     dense_rank() over (partition by division order by total_qty desc) as drnk
+                from cte1)
+	select * from cte2 where drnk<=3
+```
+
+**Exercise 28:**
+```-- Show top 2 expenses in each category
+
+WITH CTE1 AS (
+SELECT 
+	*,
+    row_number() OVER(PARTITION BY category ORDER BY amount DESC) AS rn,
+    rank() OVER(PARTITION BY category ORDER BY amount DESC) AS r,
+    dense_rank() OVER(PARTITION BY category ORDER BY amount DESC) AS dr
+FROM expenses
+ORDER BY category)
+
+SELECT * FROM CTE1 WHERE dr<=2;
+
+-- Show top 5 students
+
+WITH CTE1 AS (
+SELECT 
+	*,
+    row_number() OVER(ORDER BY marks DESC) AS rn,
+    rank() OVER(ORDER BY marks DESC) AS r,
+    dense_rank() OVER(ORDER BY marks DESC) AS dr
+FROM student_marks)
+
+SELECT * FROM CTE1 WHERE dr<=5;
+```
+
+**Exercise 29:**  
+```-- Retrieve the top 2 markets in every region 
+-- by their gross sales amount in FY=2021
+
+WITH CTE1 AS 
+(SELECT 
+	g.market,
+    c.region,
+    SUM(g.gross_price_total/1000000) AS gross_sales_mln
+FROM gross_sales AS g
+JOIN dim_customer AS c
+ON
+	g.customer_code = c.customer_code
+WHERE g.fiscal_year = 2021
+GROUP BY g.market, c.region),
+
+CTE2 AS (
+SELECT 
+	*,
+    dense_rank() OVER(PARTITION BY region ORDER BY gross_sales_mln DESC) AS dr
+FROM CTE1)
+
+SELECT *
+FROM CTE2
+WHERE dr<=2
+```
+
+**Exercise 30:**
