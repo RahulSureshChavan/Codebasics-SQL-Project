@@ -114,3 +114,32 @@ ORDER BY no_of_movies DESC
 ```
 
 **Exercise 9:**
+```-- Generate a report of all Hindi movies sorted by their revenue amount in millions. 
+-- Print movie name, revenue, currency, and unit --
+
+SELECT 
+	title,
+    ROUND(CASE
+		WHEN unit = "Billions" THEN (revenue*1000)
+        WHEN unit = "Thousands" THEN (revenue/1000)
+        ELSE revenue
+    END,1) AS revenue_mln,
+    currency,
+    unit
+FROM 
+	movies AS m
+JOIN
+	financials AS f
+ON
+	m.movie_id = f.movie_id
+JOIN 
+	languages AS l
+ON
+	m.language_id = l.language_id
+WHERE
+	l.name = "Hindi"
+ORDER BY
+	revenue_mln DESC
+```
+
+**Exercise 10:**  
