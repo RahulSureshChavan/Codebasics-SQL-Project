@@ -141,4 +141,53 @@ ORDER BY
 ```
 
 **Exercise 10:**  
+```-- Select all the movies with minimum and maximum release_year --
+-- Note that there can be more than one movie in min and a max year hence output rows can be more than 2 -- 
+SELECT * 
+FROM movies
+WHERE release_year IN
+	((SELECT MIN(release_year) FROM movies),
+	(SELECT MAX(release_year) FROM movies));
 
+-- Select all the rows from the movies table whose imdb_rating is higher than the average rating --
+SELECT *
+FROM movies
+WHERE imdb_rating > (
+	SELECT AVG(imdb_rating) FROM movies);
+```
+
+**Exercise 11:**
+```-- Using CTE to generate table with actors between 70 and 85 years of age --
+WITH actors_age AS
+(SELECT
+	name AS actor_name,
+    YEAR(CURDATE())-birth_year AS age
+FROM actors)
+SELECT actor_name, age
+FROM actors_age
+WHERE age > 70 AND age < 85;
+```
+
+**Exercise 12:**
+```-- Select all Hollywood movies released after the year 2000 --
+-- that made more than 500 million $ profit or more profit. --
+-- Note that all Hollywood movies have millions as a unit --
+-- hence you don't need to do the unit conversion. --
+-- Also, you can write this query without CTE as well --
+-- but you should try to write this using CTE only --
+
+WITH h_post_2000 AS 
+(
+	SELECT *
+    FROM movies
+    WHERE release_year > 2000 AND industry = "Hollywood"
+)
+SELECT h.title, h.release_year,
+	(revenue - budget) AS profit
+FROM financials AS f
+JOIN h_post_2000 AS h
+ON h.movie_id = f.movie_id
+WHERE (revenue - budget) > 500;
+```
+
+**Exercise 13:**
