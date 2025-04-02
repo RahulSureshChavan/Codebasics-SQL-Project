@@ -35,4 +35,5 @@ FROM
 GROUP BY
 	release_year
 ORDER BY
-	release_year DESC```
+	release_year DESC
+```
