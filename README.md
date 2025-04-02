@@ -37,3 +37,11 @@ GROUP BY
 ORDER BY
 	release_year DESC
 ```
+
+**Exercise 3:**  
+```SELECT * FROM financials;
+-- Print profit % for all the movies --
+SELECT *,
+    round(((revenue - budget) / revenue) * 100,1) AS Profit_percent
+FROM financials;
+```
