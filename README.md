@@ -15,3 +15,24 @@ SELECT * FROM movies WHERE studio IN ("Marvel studios", "Hombale Films");
 SELECT * FROM movies WHERE title LIKE "%Thor%" ORDER BY release_year DESC;  
 -- Select all movies that are not from Marvel Studios --  
 SELECT * FROM movies WHERE studio != "Marvel Studios";  
+
+Exercise 2:  
+SELECT * FROM movies;
+-- How many movies were released between 2015 and 2022 -- 
+SELECT COUNT(*) AS movie_count FROM movies WHERE release_year BETWEEN 2015 AND 2022;
+-- Print the max and min movie release year --
+SELECT 
+	MAX(release_year) AS max_release_year,
+	MIN(release_year) AS min_release_year
+FROM
+	movies;
+-- Print a year and how many movies were released in that year starting with the latest year --
+SELECT
+	release_year,
+    COUNT(*) AS movie_count
+FROM
+	movies
+GROUP BY
+	release_year
+ORDER BY
+	release_year DESC
