@@ -1,6 +1,6 @@
 # Codebasics-SQL-Project
 
-Exercise 1:  
+**Exercise 1:**  
 -- Print all movies in the order of their release year (latest first) --  
 SELECT * FROM movies ORDER BY release_year DESC;  
 -- All movies released in the year 2022 --  
