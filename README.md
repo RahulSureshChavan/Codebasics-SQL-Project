@@ -114,8 +114,7 @@ ORDER BY no_of_movies DESC
 ```
 
 **Exercise 9:**
-```-- Generate a report of all Hindi movies sorted by their revenue amount in millions. 
--- Print movie name, revenue, currency, and unit --
+```-- Generate a report of all Hindi movies sorted by their revenue amount in millions. Print movie name, revenue, currency, and unit --
 
 SELECT 
 	title,
