@@ -744,6 +744,6 @@ WHERE A.forecast_accuracy < B.forecast_accuracy
 ORDER BY B.forecast_accuracy
 ```
 
-**Exercise 33: Gross Sales View**
+**Gross Sales View**
 
 
