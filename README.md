@@ -58,3 +58,34 @@ SELECT DISTINCT studio FROM moviesdb.movies WHERE industry = "Bollywood";
 ```
 
 **Exercise 5:**
+```-- Show all the movies with their language names --
+SELECT movie_id, title, release_year, m.language_id, name AS Language
+FROM movies AS m
+INNER JOIN languages AS l
+ON m.language_id = l.language_id;
+-- Show all Telugu movie names (assuming you don't know the language id for Telugu) --
+SELECT title FROM movies AS m
+LEFT JOIN languages AS l
+ON m.language_id = l.language_id
+WHERE l.name = "Telugu";
+-- Show the language and number of movies released in that language-- 
+SELECT COUNT(m.movie_id) AS no_of_movies, l.name AS Language
+FROM movies AS m
+LEFT JOIN languages AS l
+ON m.language_id = l.language_id
+GROUP BY Language
+ORDER BY no_of_movies DESC;
+```
+
+**Exercise 6:**  
+```-- Simple CROSS JOIN 2 tables --
+SELECT *
+FROM food_db.items
+CROSS JOIN food_db.variants;
+-- Concatenating name and variant_name --
+SELECT *,
+	CONCAT(name, "-", variant_name) AS full_name,
+    (price + variant_price) AS final_price
+FROM food_db.items
+CROSS JOIN food_db.variants;
+```
