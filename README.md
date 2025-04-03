@@ -795,7 +795,7 @@ VIEW `net_sales` AS
 ```
 
 **Sales Post Invoice Discount**
-CREATE 
+```CREATE 
     ALGORITHM = UNDEFINED 
     DEFINER = `root`@`localhost` 
     SQL SECURITY DEFINER
@@ -821,5 +821,70 @@ VIEW `sales_postinv_discount` AS
 ```
 
 **Sales Pre Invoice Discount**
+```CREATE 
+    ALGORITHM = UNDEFINED 
+    DEFINER = `root`@`localhost` 
+    SQL SECURITY DEFINER
+VIEW `sales_preinv_discount` AS
+    SELECT 
+        `s`.`date` AS `date`,
+        `s`.`fiscal_year` AS `fiscal_year`,
+        `s`.`customer_code` AS `customer_code`,
+        `c`.`market` AS `market`,
+        `s`.`product_code` AS `product_code`,
+        `p`.`product` AS `product`,
+        `p`.`variant` AS `variant`,
+        `s`.`sold_quantity` AS `sold_quantity`,
+        `g`.`gross_price` AS `gross_price_per_unit`,
+        (`s`.`sold_quantity` * `g`.`gross_price`) AS `gross_price_total`,
+        `pre`.`pre_invoice_discount_pct` AS `pre_invoice_discount_pct`
+    FROM
+        ((((`fact_sales_monthly` `s`
+        JOIN `fact_gross_price` `g` ON (((`s`.`fiscal_year` = `g`.`fiscal_year`)
+            AND (`s`.`product_code` = `g`.`product_code`))))
+        JOIN `dim_product` `p` ON ((`g`.`product_code` = `p`.`product_code`)))
+        JOIN `dim_customer` `c` ON ((`c`.`customer_code` = `s`.`customer_code`)))
+        JOIN `fact_pre_invoice_deductions` `pre` ON (((`s`.`customer_code` = `pre`.`customer_code`)
+            AND (`s`.`fiscal_year` = `pre`.`fiscal_year`))))
+```
 
+**Stored Procedure: Get Forecast Accuracy**
+```CREATE DEFINER=`root`@`localhost` PROCEDURE `get_forecast_accuracy`(
+	in_fiscal_year YEAR
+)
+BEGIN
+WITH CTE1 AS
+(
+SELECT
+	f.customer_code, 
+    c.customer,
+    c.market,
+    SUM(f.sold_quantity) AS total_sold_qty,
+    SUM(f.forecast_quantity) AS total_forecast_qty,
+    SUM(f.forecast_quantity - f.sold_quantity) AS net_error,
+    SUM(f.forecast_quantity - f.sold_quantity)*100/SUM(f.forecast_quantity) AS net_err_pct,
+    SUM(ABS(f.forecast_quantity - f.sold_quantity)) AS abs_error,
+    SUM(ABS(f.forecast_quantity - f.sold_quantity))*100/SUM(f.forecast_quantity) AS abs_err_pct
+FROM
+	fact_actual_estimate AS f
+JOIN
+	dim_customer AS c
+ON
+	f.customer_code = c.customer_code
+WHERE 
+	f.fiscal_year = in_fiscal_year
+GROUP BY
+	f.customer_code
+)
+SELECT 
+	*,
+    IF
+		(abs_err_pct > 100, 0, 100-abs_err_pct) AS forecast_accuracy
+FROM
+	CTE1
+ORDER BY forecast_accuracy DESC;
+END
+```
+
+**Stored Procedure: Get Market Badge**
 
