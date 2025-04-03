@@ -849,7 +849,8 @@ VIEW `sales_preinv_discount` AS
 ```
 
 **Stored Procedure: Get Forecast Accuracy**
-```CREATE DEFINER=`root`@`localhost` PROCEDURE `get_forecast_accuracy`(
+```
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_forecast_accuracy`(
 	in_fiscal_year YEAR
 )
 BEGIN
