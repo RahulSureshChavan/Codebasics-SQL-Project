@@ -888,4 +888,218 @@ END
 ```
 
 **Stored Procedure: Get Market Badge**
+```
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_market_badge`(
+	IN in_market VARCHAR(45),
+    IN in_fiscal_year YEAR,
+    OUT out_badge VARCHAR(45)
+)
+BEGIN
+	DECLARE qty INT DEFAULT 0;
+    
+    # Set default market to be INDIA
+    IF in_market = "" THEN
+    SET in_market = "india";
+    END IF;
+    
+    # Retrieve total qty for a given market + fyear
+    SELECT
+		SUM(sold_quantity) INTO qty
+	FROM fact_sales_monthly AS s
+    JOIN dim_customer AS c
+    ON s.customer_code = c.customer_code
+    WHERE
+		get_fiscal_year(s.date) = in_fiscal_year AND
+        c.market = in_market;
+	
+    # Determin market badge
+    IF qty > 5000000 THEN
+		SET out_badge = "gold";
+    ELSE 
+		SET out_badge = "silver";
+	END IF;
+END
+```
 
+**Stored Procedure: Get Monthly Gross Sales For Customer**
+```
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_monthly_gross_sales_for_customer`(
+	in_customer_codes TEXT
+)
+BEGIN
+SELECT 
+	fsm.date, 
+    SUM(fgp.gross_price*fsm.sold_quantity) AS monthly_sales
+FROM fact_sales_monthly AS fsm
+JOIN fact_gross_price AS fgp
+ON 
+	fgp.product_code = fsm.product_code AND 
+    fgp.fiscal_year = get_fiscal_year(fsm.date)
+WHERE 
+	FIND_IN_SET(fsm.customer_code, in_customer_codes) > 0
+GROUP BY fsm.date
+ORDER BY fsm.date ASC;
+END
+```
+
+**Stored Procedure: Get Top n Customers By Net Sales**
+```
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_top_n_customers_by_net_sales`(
+	in_fiscal_year YEAR,
+    in_market VARCHAR(45),
+    in_top_n INT
+)
+BEGIN
+SELECT
+	c.customer,
+    ROUND(SUM(n.net_sales/1000000),2) AS net_sales_mln
+FROM
+	gdb0041.net_sales AS n
+JOIN
+	dim_customer AS c
+ON
+	c.customer_code = n.customer_code
+WHERE 
+	n.fiscal_year = in_fiscal_year AND
+    n.market = in_market
+GROUP BY
+	c.customer
+ORDER BY
+	net_sales_mln DESC
+LIMIT in_top_n;
+END
+```
+
+**Stored Procedure: Get Top n Markets By Net Sales**
+```
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_top_n_markets_by_net_sales`(
+	in_fiscal_year YEAR,
+    in_top_n INT
+)
+BEGIN
+SELECT 
+	market,
+    ROUND(SUM(net_sales/1000000),2) AS net_sales_mln
+FROM 
+	gdb0041.net_sales
+WHERE
+	fiscal_year = in_fiscal_year
+GROUP BY 
+	market
+ORDER BY
+	net_sales_mln DESC
+LIMIT in_top_n;
+END
+```
+
+**Stored Procedure: Get Top n Products By Net Sales**
+```
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_top_n_products_by_net_sales`(
+	in_fiscal_year YEAR,
+    in_top_n INT
+)
+BEGIN
+SELECT
+	product,
+    ROUND(SUM(net_sales/1000000),2) AS net_sales_mln
+FROM
+	gdb0041.net_sales
+WHERE
+	fiscal_year = in_fiscal_year
+GROUP BY
+	product
+ORDER BY
+	net_sales_mln DESC
+LIMIT in_top_n;
+END
+```
+
+**Stored Procedure: Get Top n Products Per Division By Quantity Sold**
+```
+CREATE DEFINER=`root`@`localhost` PROCEDURE `get_top_n_products_per_division_by_qty_sold`(
+	in_fiscal_year YEAR,
+    in_top_n INT
+)
+BEGIN
+WITH cte1 AS (select
+                     p.division,
+                     p.product,
+                     sum(sold_quantity) as total_qty
+                from fact_sales_monthly s
+                join dim_product p
+                      on p.product_code=s.product_code
+                where fiscal_year=in_fiscal_year
+                group by p.division, p.product),
+           cte2 as 
+	        (select 
+                     *,
+                     dense_rank() over (partition by division order by total_qty desc) as drnk
+                from cte1)
+	select * from cte2 where drnk<=in_top_n;
+END
+```
+
+**Stored Procedure: Net Sales Percentage By Region**
+```
+CREATE DEFINER=`root`@`localhost` PROCEDURE `net_sales_pct_by_region`(
+	in_fiscal_year YEAR,
+    in_region VARCHAR(45)
+)
+BEGIN
+WITH CTE1 AS (
+SELECT 
+	customer,
+    ROUND(SUM(net_sales/1000000),2) AS net_sales_mln
+FROM dim_customer AS c
+JOIN gdb0041.net_sales AS s
+ON c.customer_code = s.customer_code
+WHERE
+	s.fiscal_year = in_fiscal_year AND
+    region = in_region
+GROUP BY customer)
+
+SELECT *,
+	net_sales_mln*100/SUM(net_sales_mln) OVER() AS market_share_pct
+FROM CTE1
+ORDER BY market_share_pct DESC;
+END
+```
+
+**User Defined SQL Functions: Get Fiscal Quarter**
+```
+CREATE DEFINER=`root`@`localhost` FUNCTION `get_fiscal_quarter`(
+	calendar_date DATE
+) RETURNS char(2) CHARSET utf8mb4
+    DETERMINISTIC
+BEGIN
+	DECLARE m TINYINT;
+    DECLARE qtr CHAR(2);
+    SET m = MONTH(calendar_date);
+    
+    CASE
+		WHEN m IN (9,10,11) THEN
+			SET qtr = "Q1";
+		WHEN m IN (12,1,2) THEN
+			SET qtr = "Q2";
+		WHEN m IN (3,4,5) THEN
+			SET qtr = "Q3";
+		ELSE
+			SET qtr = "Q4";
+    END CASE;
+    
+RETURN qtr;
+END
+```
+
+**User Defined SQL Functions: Get Fiscal Year**
+```
+CREATE DEFINER=`root`@`localhost` FUNCTION `get_fiscal_year`(
+	calendar_date DATE
+) RETURNS int
+    DETERMINISTIC
+BEGIN
+	DECLARE fiscal_year INT;
+    SET fiscal_year = YEAR(DATE_ADD(calendar_date, INTERVAL 4 MONTH));
+RETURN fiscal_year;
+END
+```
