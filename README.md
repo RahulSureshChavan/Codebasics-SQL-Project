@@ -1,5 +1,42 @@
 # Codebasics-SQL-Project
 
+Project Overview: AtliQ Hardware Sales and Forecasting Analysis
+This project, completed in collaboration with Codebasics, showcases the transformative potential of SQL in analyzing large datasets effectively. The focus was on addressing performance challenges AtliQ Hardware faced due to the increasing size of Excel files, which hindered efficiency in extracting actionable insights.
+
+Problem Statement
+AtliQ Hardware struggled with data management and decision-making due to limitations in Excel's scalability. The challenge was to leverage MySQL for robust data analysis and to uncover critical insights regarding sales performance, market trends, customer behavior, and supply chain accuracy.
+
+Approach
+Using a dataset of over 1 million records, I embarked on comprehensive analyses with SQL, covering diverse domains like sales and supply chain. I applied advanced SQL techniques to:
+
+Develop detailed reports for top-performing markets, products, and customers.
+
+Assess net sales share across regions to inform strategic decisions.
+
+Perform financial ad-hoc analyses, including stored procedures for market badges and dense rank queries for identifying top markets.
+
+Evaluate supply chain forecast accuracy for various customers.
+
+Outcome and Impact
+The project enabled AtliQ Hardware to replace cumbersome Excel files with a scalable and efficient MySQL-powered solution. It facilitated informed decision-making by delivering critical insights across sales and supply chain domains. Additionally, this work exemplifies industry-level application of SQL techniques to derive actionable business intelligence.
+
+Key Learnings
+During this project, I mastered essential and advanced SQL concepts, including:
+
+Retrieving and manipulating data using queries (SELECT, WHERE, JOINs, Subqueries, CTEs).
+
+Data integrity and relationship management using Entity Relationship Diagrams (ERDs).
+
+Optimizing analysis with tools like stored procedures, user-defined SQL functions, temporary tables, and window functions.
+
+Advanced analytical techniques, such as dense ranking, calculated columns, and views.
+
+ETL processes, data warehousing concepts, and database normalization.
+
+Query performance optimization and schema design (Star vs. Snowflake).
+
+This journey not only deepened my technical skills but also honed my ability to translate data into insights that drive meaningful decisions.
+
 **Exercise 1:**  
 ```-- Print all movies in the order of their release year (latest first) --  
 SELECT * FROM movies ORDER BY release_year DESC;  
