@@ -1,6 +1,6 @@
 # Codebasics-SQL-Project
 
-Project Overview: AtliQ Hardware Sales and Forecasting Analysis
+**Project Overview: AtliQ Hardware Sales and Forecasting Analysis**
 This project, completed in collaboration with Codebasics, showcases the transformative potential of SQL in analyzing large datasets effectively. The focus was on addressing performance challenges AtliQ Hardware faced due to the increasing size of Excel files, which hindered efficiency in extracting actionable insights.
 
 Problem Statement
